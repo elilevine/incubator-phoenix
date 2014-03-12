@@ -31,6 +31,7 @@ import java.util.Properties;
 import org.apache.phoenix.schema.TableNotFoundException;
 import org.apache.phoenix.util.PhoenixRuntime;
 import org.apache.phoenix.util.TestUtil;
+import org.junit.Ignore;
 import org.junit.Test;
 
 /**
@@ -296,7 +297,7 @@ public class TenantSpecificTablesDMLTest extends BaseTenantSpecificTablesTest {
     @Test
     public void testUpsertSelectOnlyUpsertsTenantDataWithDifferentTenantTable() throws Exception {
         createTestTable(PHOENIX_JDBC_TENANT_SPECIFIC_URL, "CREATE VIEW ANOTHER_TENANT_TABLE ( " + 
-            "tenant_col VARCHAR) AS SELECT * FROM PARENT_TABLE WHERE tenant_type_id = 'def'", null, nextTimestamp(), false);
+            "tenant_col VARCHAR) AS SELECT * FROM " + PARENT_TABLE_NAME + " WHERE tenant_type_id = 'def'", null, nextTimestamp(), false);
         
         Connection conn = nextConnection(getUrl());
         try {
@@ -384,4 +385,17 @@ public class TenantSpecificTablesDMLTest extends BaseTenantSpecificTablesTest {
             conn.close();
         }
     }
+    
+	@Test @Ignore("Failing with an NPE at Upsert statement")
+	public void testUpsertValuesUsingViewWithNoWhereClause() throws Exception {
+		Connection conn = nextConnection(PHOENIX_JDBC_TENANT_SPECIFIC_URL);
+		conn.setAutoCommit(true);
+		conn.createStatement().executeUpdate("UPSERT INTO " + TENANT_TABLE_NAME_NO_TENANT_TYPE_ID + " (id) VALUES (0)");
+		
+        ResultSet rs = conn.createStatement().executeQuery("select id from " + TENANT_TABLE_NAME_NO_TENANT_TYPE_ID);
+        rs.next();
+        assertEquals(0, rs.getInt(1));
+        assertFalse(rs.next());
+		conn.close();
+	}
 }
