@@ -18,6 +18,7 @@
 package org.apache.phoenix.compile;
 
 import static com.google.common.collect.Lists.newArrayListWithCapacity;
+import static java.util.Collections.emptyMap;
 
 import java.sql.ParameterMetaData;
 import java.sql.ResultSet;
@@ -236,9 +237,12 @@ public class UpsertCompiler {
         if (table.getViewType() == ViewType.UPDATABLE) {
             StatementContext context = new StatementContext(statement, resolver, new Scan());
             ViewValuesMapBuilder builder = new ViewValuesMapBuilder(context);
-            ParseNode viewNode = new SQLParser(table.getViewStatement()).parseQuery().getWhere();
-            viewNode.accept(builder);
-            addViewColumnsToBe = builder.getViewColumns();
+            String viewStatement = table.getViewStatement();
+            if (viewStatement != null) {
+	            ParseNode viewNode = new SQLParser(viewStatement).parseQuery().getWhere();
+	            viewNode.accept(builder);
+	            addViewColumnsToBe = builder.getViewColumns();
+            }
         }
         // Allow full row upsert if no columns or only dynamic ones are specified and values count match
         if (columnNodes.isEmpty() || columnNodes.size() == upsert.getTable().getDynamicColumns().size()) {
